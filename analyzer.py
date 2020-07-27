@@ -4,26 +4,15 @@ from nltk.corpus import twitter_samples, stopwords
 from nltk.tag import pos_tag
 from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
-
-# nltk libraries that are used
-# nltk.download('punkt')
-# nltk.download('stopwords')
-# nltk.download('wordnet')
-# nltk.download('averaged_perceptron_tagger')
-# nltk.download('twitter_samples')
-
+import pickle
 
 class Analyzer:
 
     def __init__(self):
-        # This might be needed for the sake of downloading other datasets
-        try:
-            _create_unverified_https_context = ssl._create_unverified_context
-        except AttributeError:
-            pass
-        else:
-            ssl._create_default_https_context = _create_unverified_https_context
+        self.model = None
+        self.dataset = None
 
+    def preprocess_data(self):
         self.pos_tweets = twitter_samples.strings('positive_tweets.json')
         self.neg_tweets = twitter_samples.strings('negative_tweets.json')
         self.text = twitter_samples.strings('tweets.20150430-223406.json')
@@ -41,15 +30,10 @@ class Analyzer:
         self.pos_dataset = [(tweet_dict, "Positive") for tweet_dict in self.pos_tokens_for_model]
         self.neg_dataset = [(tweet_dict, "Negative") for tweet_dict in self.neg_tokens_for_model]
         self.dataset = self.pos_dataset + self.neg_dataset
-
         random.shuffle(self.dataset)
-
         mid = len(self.dataset) // 2
         self.train_data = self.dataset[:mid]
         self.test_data = self.dataset[mid:]
-
-        self.model = None
-
 
     def lemmatize_sentence(self, tokens):
         lemmatizer = WordNetLemmatizer()
@@ -105,12 +89,64 @@ class Analyzer:
         print(classify.accuracy(self.model, self.test_data))
         print(self.model.show_most_informative_features(10))
         custom_tweet = "I ordered just once from TerribleCo, they screwed up, never used the app again."
+        custom_tweet = "Congrats #SportStar on your 7th best goal from last season winning goal of the year :) #Baller #Topbin #oneofmanyworldies"
         custom_tokens = self.remove_noise(word_tokenize(custom_tweet))
         print(self.model.classify(dict([token, True] for token in custom_tokens)))
 
+    def save(self, model_file='cc.pickle', data_file='cc_data.pickle'):
+        """Save the current model and dataset
+        """
+        model_and_data = [self.model, self.dataset]
+        f = open(model_file, 'wb')
+        pickle.dump(model_and_data, f)
+        f.close()
+
+    def load(self, model_file='cc.pickle', data_file='cc_data.pickle'):
+        """Load a model and it's data
+
+        This also setups the self.test_data and self.train_data variables
+        """
+        f = open(model_file, 'rb')
+        self.model, self.dataset = pickle.load(f)
+        f.close()
+
+        mid = len(self.dataset) // 2
+        random.shuffle(self.dataset)
+        self.train_data = self.dataset[:mid]
+        self.test_data = self.dataset[mid:]
+
+    def classify(self, sentence):
+        tokens = self.remove_noise(word_tokenize(sentence))
+        return self.model.classify(dict([token, True] for token in tokens))
+
 ## Testing
 if __name__ == "__main__":
+
     a = Analyzer()
-    a.train_model(a.train_data)
+    # Create a new NLP model
+    # a.preprocess_data()
+    # a.train_model(a.train_data)
+    # a.save()
+    # a.dump()
+
+    # Load an NLP model
+    a.load()
     a.dump()
-    
+
+
+
+
+# This might be needed for the sake of downloading other datasets
+# try:
+#     _create_unverified_https_context = ssl._create_unverified_context
+# except AttributeError:
+#     pass
+# else:
+#     ssl._create_default_https_context = _create_unverified_https_context
+
+# nltk libraries that are used
+# nltk.download('punkt')
+# nltk.download('stopwords')
+# nltk.download('wordnet')
+# nltk.download('averaged_perceptron_tagger')
+# nltk.download('twitter_samples')
