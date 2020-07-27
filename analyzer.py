@@ -93,20 +93,20 @@ class Analyzer:
         custom_tokens = self.remove_noise(word_tokenize(custom_tweet))
         print(self.model.classify(dict([token, True] for token in custom_tokens)))
 
-    def save(self, model_file='cc.pickle', data_file='cc_data.pickle'):
+    def save(self, file='model/cc.pickle'):
         """Save the current model and dataset
         """
         model_and_data = [self.model, self.dataset]
-        f = open(model_file, 'wb')
+        f = open(file, 'wb')
         pickle.dump(model_and_data, f)
         f.close()
 
-    def load(self, model_file='cc.pickle', data_file='cc_data.pickle'):
+    def load(self, file='model/cc.pickle'):
         """Load a model and it's data
 
         This also setups the self.test_data and self.train_data variables
         """
-        f = open(model_file, 'rb')
+        f = open(file, 'rb')
         self.model, self.dataset = pickle.load(f)
         f.close()
 
